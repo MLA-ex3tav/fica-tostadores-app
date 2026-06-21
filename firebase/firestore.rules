@@ -1,0 +1,74 @@
+rules_version = '2';
+
+// Reglas alineadas con la app web + delete en solicitudes para sync de la app Electron.
+// Publicar en Firebase Console → Firestore → Reglas (proyecto fica-tostadores).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function callerDoc() {
+      return get(/databases/$(database)/documents/clientes/$(request.auth.uid));
+    }
+
+    function callerRole() {
+      return callerDoc().data.role;
+    }
+
+    function isSuperAdmin() {
+      return request.auth != null && callerRole() == 'admin';
+    }
+
+    function isValidRole(role) {
+      return role in ['cliente', 'editor', 'admin'];
+    }
+
+    function isStaff() {
+      return request.auth != null && callerRole() in ['editor', 'admin'];
+    }
+
+    match /clientes/{userId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == userId || isSuperAdmin());
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.role == 'cliente';
+
+      allow update: if request.auth != null && (
+        (
+          request.auth.uid == userId
+          && request.resource.data.role == resource.data.role
+        ) || (
+          isSuperAdmin()
+          && request.auth.uid != userId
+          && isValidRole(request.resource.data.role)
+          && request.resource.data.role is string
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+        )
+      );
+
+      allow delete: if false;
+    }
+
+    // Solicitudes desde la web pública (creación vía Admin SDK).
+    // Electron: leer, actualizar y eliminar (sync local delete_pending).
+    match /solicitudes_cotizacion/{solicitudId} {
+      allow read, update, delete: if isStaff();
+      allow create: if false;
+    }
+
+    // Catálogo público (escritura solo vía Admin SDK en API routes).
+    match /productos/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /catalogo_config/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

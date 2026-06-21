@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://apis.google.com https://www.gstatic.com blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' blob: http://localhost:* http://127.0.0.1:* https://*.googleapis.com https://accounts.google.com https://securetoken.googleapis.com https://www.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com; frame-src 'self' blob: https://accounts.google.com https://*.firebaseapp.com https://apis.google.com; object-src 'self' blob:; img-src 'self' data: blob: https://*.googleusercontent.com https://www.gstatic.com;"
+  />
+  <title>Fica Tostadores</title>
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body>
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="login-card__brand">Fica Tostadores</div>
+      <p class="login-card__subtitle">Administración industrial</p>
+      <div class="login-card__form" id="login-card-form">
+        <p class="login-card__hint">Acceso solo para cuentas con rol admin o editor. Se abre en tu navegador.</p>
+        <div class="login-loading login-loading--visible" id="login-checking" role="status" aria-live="polite">
+          <span class="login-spinner" aria-hidden="true"></span>
+          <span class="login-loading__text">Verificando sesión…</span>
+        </div>
+        <button class="btn btn--google login-card__google" id="btn-google-login" type="button" hidden>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar con Google
+        </button>
+        <div class="login-loading" id="login-loading" role="status" aria-live="polite">
+          <span class="login-spinner" aria-hidden="true"></span>
+          <span class="login-loading__text">Abriendo navegador…</span>
+        </div>
+        <div class="login-error" id="login-error"></div>
+      </div>
+      <div class="login-access-denied" id="login-access-denied" hidden>
+        <div class="login-access-denied__icon" id="login-access-denied-icon" aria-hidden="true"></div>
+        <h2 class="login-access-denied__title">Acceso denegado</h2>
+        <p class="login-access-denied__message" id="login-access-denied-message"></p>
+        <button class="btn btn--secondary login-access-denied__retry" id="btn-login-retry" type="button">
+          Probar con otra cuenta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell app-shell--hidden">
+    <aside class="sidebar">
+      <header class="sidebar__header">
+        <span class="sidebar__title">Panel de administración</span>
+      </header>
+
+      <nav class="sidebar__nav" id="sidebar-nav">
+        <p class="sidebar__group-label">Operación</p>
+        <button class="nav-item nav-item--active" data-view="cotizaciones" type="button">
+          <span class="nav-item__icon" data-lucide="cotizaciones"></span>
+          <span class="nav-item__text">Cotizaciones</span>
+          <span class="nav-item__count" id="nav-badge-cotizaciones" hidden>0</span>
+        </button>
+        <button class="nav-item" data-view="ot" type="button">
+          <span class="nav-item__icon" data-lucide="ot"></span>
+          <span class="nav-item__text">Órdenes de trabajo</span>
+        </button>
+        <button class="nav-item" data-view="historial" type="button">
+          <span class="nav-item__icon" data-lucide="historial"></span>
+          <span class="nav-item__text">Historial</span>
+        </button>
+
+        <p class="sidebar__group-label">Administración</p>
+        <button class="nav-item" data-view="clientes" type="button">
+          <span class="nav-item__icon" data-lucide="clientes"></span>
+          <span class="nav-item__text">Clientes</span>
+        </button>
+        <button class="nav-item" data-view="productos" type="button">
+          <span class="nav-item__icon" data-lucide="productos"></span>
+          <span class="nav-item__text">Productos</span>
+        </button>
+        <button class="nav-item" data-view="reportes" type="button">
+          <span class="nav-item__icon" data-lucide="reportes"></span>
+          <span class="nav-item__text">Reportes</span>
+        </button>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="update-status" id="update-status">
+          <div class="update-status__downloading">
+            <div class="update-status__label" id="update-label">Descargando actualización…</div>
+            <div class="update-status__progress-track">
+              <div class="update-status__progress-bar" id="update-progress-bar"></div>
+            </div>
+          </div>
+          <div class="update-status__ready">
+            <button class="btn-restart" id="btn-restart-update" type="button">Reiniciar para actualizar</button>
+          </div>
+        </div>
+
+        <div class="sidebar__account" id="sidebar-user">
+          <div class="sidebar__account-main">
+            <div class="sidebar__user-avatar" id="user-avatar" aria-hidden="true"></div>
+            <div class="sidebar__user-info">
+              <span class="sidebar__user-name" id="user-name"></span>
+              <span class="sidebar__user-email" id="user-email"></span>
+              <span class="sidebar__user-role" id="user-role"></span>
+            </div>
+          </div>
+          <button class="sidebar__logout" id="btn-logout" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">
+            <span data-lucide="logout" data-lucide-size="18"></span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="view view--active" data-view="cotizaciones" id="view-cotizaciones">
+        <div class="view__header">
+          <h1 class="view__title">Cotizaciones</h1>
+          <p class="view__subtitle">Solicitudes pendientes en tiempo real</p>
+        </div>
+        <div id="cotizaciones-error"></div>
+        <div id="cotizaciones-list"></div>
+        <div id="cotizacion-detail" hidden></div>
+      </section>
+
+      <section class="view" data-view="ot" id="view-ot">
+        <div class="view__header">
+          <h1 class="view__title">Órdenes de Trabajo</h1>
+          <p class="view__subtitle">Producción y seguimiento de fabricación</p>
+        </div>
+        <div id="ot-error"></div>
+        <div id="ot-panel" class="ot-panel">
+          <div class="ot-list" id="ot-list"></div>
+          <div id="ot-detail" class="ot-detail" hidden></div>
+        </div>
+      </section>
+
+      <section class="view" data-view="historial" id="view-historial">
+        <div class="view__header">
+          <h1 class="view__title">Historial</h1>
+          <p class="view__subtitle">Cotizaciones y OT cerradas</p>
+        </div>
+        <div id="historial-list"></div>
+      </section>
+
+      <section class="view" data-view="clientes" id="view-clientes">
+        <div class="view__header">
+          <h1 class="view__title">Clientes</h1>
+          <p class="view__subtitle">Historial y reincidencia por cliente</p>
+        </div>
+        <div id="clientes-list"></div>
+      </section>
+
+      <section class="view" data-view="productos" id="view-productos">
+        <div class="view__header">
+          <h1 class="view__title">Productos</h1>
+          <p class="view__subtitle">Catálogo local de tostadoras</p>
+        </div>
+        <div id="productos-root"></div>
+      </section>
+
+      <section class="view" data-view="reportes" id="view-reportes">
+        <div class="view__header">
+          <h1 class="view__title">Reportes</h1>
+          <p class="view__subtitle">Métricas e ingresos por período</p>
+        </div>
+        <div id="reportes-root"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="fica-quote-pdf-source" class="fica-quote-pdf-source" hidden></div>
+
+  <div class="app-dialog" id="app-dialog" hidden>
+    <div class="app-dialog__backdrop"></div>
+    <div class="app-dialog__panel" role="alertdialog" aria-modal="true" aria-labelledby="app-dialog-title" aria-describedby="app-dialog-message">
+      <div class="app-dialog__icon" aria-hidden="true"></div>
+      <h2 class="app-dialog__title" id="app-dialog-title"></h2>
+      <p class="app-dialog__message" id="app-dialog-message"></p>
+      <div class="app-dialog__actions"></div>
+    </div>
+  </div>
+
+  <div class="app-toast-host" id="app-toast-host" aria-live="polite"></div>
+
+  <div class="app-modal" id="app-detail-modal" hidden>
+    <div class="app-modal__backdrop" aria-hidden="true"></div>
+    <div class="app-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="app-detail-modal-title">
+      <div class="app-modal__body" id="app-detail-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="pdf-preview-modal" id="pdf-preview-modal" hidden>
+    <div class="pdf-preview__backdrop"></div>
+    <div class="pdf-preview__dialog">
+      <div class="pdf-preview__header">
+        <h2 class="pdf-preview__title">Vista previa del PDF</h2>
+        <div class="pdf-preview__header-actions">
+          <button class="btn btn--secondary" type="button" data-action="pdf-download">Descargar</button>
+          <button class="btn btn--primary" type="button" data-action="pdf-close">Cerrar</button>
+        </div>
+      </div>
+      <div class="pdf-preview__error" id="pdf-preview-error" hidden></div>
+      <div class="pdf-preview__body" id="pdf-preview-container"></div>
+    </div>
+  </div>
+
+  <script type="module" src="dist/renderer.bundle.js"></script>
+</body>
+</html>
